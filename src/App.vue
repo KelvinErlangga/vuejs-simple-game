@@ -2611,6 +2611,14 @@ const dash = () => {
       // Check if mobile
       isMobile.value = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       
+      // Try to lock orientation to landscape on mobile
+      if (isMobile.value && screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape-primary').catch(() => {
+          // Orientation lock not supported or failed
+          console.log('Orientation lock not supported')
+        })
+      }
+      
       // Initialize canvas
       const canvas = gameCanvas.value
       if (canvas) {
@@ -3263,6 +3271,40 @@ body {
   background: rgba(0, 0, 0, 0.7);
   color: white;
   font-size: clamp(20px, 4vw, 36px);
+}
+
+/* ==========================================
+   ORIENTATION SPECIFIC STYLES
+   ========================================== */
+@media (orientation: landscape) {
+  .mobile-controls {
+    padding-bottom: clamp(30px, 6vh, 50px);
+  }
+  
+  .joystick-container {
+    bottom: clamp(60px, 10vh, 100px);
+  }
+  
+  .mobile-actions {
+    bottom: clamp(30px, 6vh, 50px);
+    right: clamp(40px, 8vw, 80px);
+  }
+  
+  .mobile-btn {
+    width: clamp(70px, 14vw, 100px);
+    height: clamp(70px, 14vw, 100px);
+    font-size: clamp(28px, 6vw, 44px);
+  }
+  
+  .joystick-base {
+    width: clamp(90px, 18vw, 130px);
+    height: clamp(90px, 18vw, 130px);
+  }
+  
+  .joystick-thumb {
+    width: clamp(45px, 9vw, 65px);
+    height: clamp(45px, 9vw, 65px);
+  }
 }
 
 /* ==========================================
