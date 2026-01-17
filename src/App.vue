@@ -640,8 +640,8 @@ export default {
       maxStamina: 100,
       level: 1,
       xp: 0,
-      speed: 3,
-      baseSpeed: 3,
+      speed: 5,
+      baseSpeed: 5,
       damage: 10,
       defense: 0,
       direction: { x: 0, y: -1 },
@@ -3173,7 +3173,7 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 20px;
+  padding: clamp(10px, 2vh, 20px) clamp(10px, 3vw, 20px) clamp(20px, 4vh, 40px) clamp(10px, 3vw, 20px);
   z-index: 100;
   pointer-events: none;
 }
@@ -3184,13 +3184,13 @@ body {
 
 .joystick-container {
   position: absolute;
-  bottom: 120px;
-  left: 50px;
+  bottom: clamp(80px, 12vh, 120px);
+  left: clamp(30px, 5vw, 50px);
 }
 
 .joystick-base {
-  width: 120px;
-  height: 120px;
+  width: clamp(80px, 15vw, 120px);
+  height: clamp(80px, 15vw, 120px);
   background: rgba(0, 0, 0, 0.5);
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
@@ -3199,34 +3199,34 @@ body {
 }
 
 .joystick-thumb {
-  width: 60px;
-  height: 60px;
+  width: clamp(40px, 7.5vw, 60px);
+  height: clamp(40px, 7.5vw, 60px);
   background: rgba(255, 255, 255, 0.8);
   border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   position: absolute;
-  top: 30px;
-  left: 30px;
+  top: calc(50% - clamp(20px, 3.75vw, 30px));
+  left: calc(50% - clamp(20px, 3.75vw, 30px));
   transition: transform 0.1s ease;
 }
 
 .mobile-actions {
   position: absolute;
-  bottom: 60px;
-  right: 50px;
+  bottom: clamp(40px, 8vh, 60px);
+  right: clamp(30px, 5vw, 50px);
   display: flex;
-  gap: 20px;
+  gap: clamp(10px, 2vw, 20px);
   flex-wrap: wrap;
   justify-content: flex-end;
-  max-width: 300px;
+  max-width: clamp(200px, 40vw, 300px);
 }
 
 .mobile-btn {
-  width: 90px;
-  height: 90px;
+  width: clamp(60px, 12vw, 90px);
+  height: clamp(60px, 12vw, 90px);
   border-radius: 50%;
   border: none;
-  font-size: 40px;
+  font-size: clamp(24px, 5vw, 40px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3262,7 +3262,7 @@ body {
 .mobile-btn.menu {
   background: rgba(0, 0, 0, 0.7);
   color: white;
-  font-size: 36px;
+  font-size: clamp(20px, 4vw, 36px);
 }
 
 /* ==========================================
