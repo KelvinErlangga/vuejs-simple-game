@@ -1,5 +1,5 @@
 <template>
-  <div class="game-container" :class="{ 'mobile-view': isMobile }">
+  <div class="game-container" :class="{ 'mobile-view': isMobile, 'portrait-rotate': isMobile && isPortrait }">
     <!-- Canvas untuk Game -->
     <canvas ref="gameCanvas" class="game-canvas"></canvas>
     
@@ -621,6 +621,7 @@ export default {
     const showTutorial = ref(true)
     const showLevelComplete = ref(false)
     const gamePaused = ref(false)
+    const isPortrait = ref(false)
     
     // Game state
     const gameTime = ref(0)
@@ -2611,6 +2612,23 @@ const dash = () => {
       // Check if mobile
       isMobile.value = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       
+      // Check initial orientation
+      isPortrait.value = window.innerHeight > window.innerWidth
+      
+      // Listen for orientation changes
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          isPortrait.value = window.innerHeight > window.innerWidth
+          
+          // Update canvas size after orientation change
+          const canvas = gameCanvas.value
+          if (canvas) {
+            canvas.width = window.innerWidth
+            canvas.height = window.innerHeight
+          }
+        }, 100)
+      })
+      
       // Try to lock orientation to landscape on mobile
       if (isMobile.value && screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('landscape-primary').catch(() => {
@@ -2815,6 +2833,17 @@ body {
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+}
+
+.portrait-rotate {
+  transform: rotate(90deg);
+  transform-origin: center;
+  width: 100vh !important;
+  height: 100vw !important;
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) rotate(90deg) !important;
 }
 
 .mobile-view .game-canvas {
