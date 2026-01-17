@@ -481,11 +481,45 @@
           <button class="game-over-btn retry" @click="retryGame">
             🔄 RETRY
           </button>
+          <button v-if="gameOverReason === 'victory'" class="game-over-btn next" @click="nextFloor()">
+            ⬆️ NEXT LEVEL
+          </button>
           <button class="game-over-btn menu" @click="quitToMenu">
             🏠 MAIN MENU
           </button>
           <button class="game-over-btn share" @click="shareScore">
             📢 SHARE SCORE
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Level Complete Overlay -->
+    <div v-if="showLevelComplete" class="level-complete-overlay">
+      <div class="level-complete-screen">
+        <h1 class="level-complete-title">LEVEL COMPLETE!</h1>
+        
+        <div class="level-complete-stats">
+          <div class="stat">
+            <span>Floor:</span>
+            <span class="value">{{ currentFloor }}</span>
+          </div>
+          <div class="stat">
+            <span>Enemies Defeated:</span>
+            <span class="value">{{ enemiesDefeated }}</span>
+          </div>
+          <div class="stat">
+            <span>Time:</span>
+            <span class="value">{{ formatTime(gameTime) }}</span>
+          </div>
+        </div>
+
+        <div class="level-complete-actions">
+          <button class="level-complete-btn next" @click="confirmNextLevel">
+            ⬆️ NEXT LEVEL
+          </button>
+          <button class="level-complete-btn menu" @click="backToMenuFromLevel">
+            🏠 MAIN MENU
           </button>
         </div>
       </div>
@@ -585,6 +619,7 @@ export default {
     const showMobileMenu = ref(false)
     const showMinimap = ref(true)
     const showTutorial = ref(true)
+    const showLevelComplete = ref(false)
     const gamePaused = ref(false)
     
     // Game state
@@ -682,6 +717,15 @@ export default {
     const tileSize = 64
     const minimapTiles = ref([])
     
+    // Level configurations
+    const levelConfigs = [
+      { name: 'Floor 1: The Beginning', enemyCount: 3, enemyHealthMult: 0.8, enemyDamageMult: 0.8, itemCount: 3 },
+      { name: 'Floor 2: Deeper Caves', enemyCount: 5, enemyHealthMult: 1.0, enemyDamageMult: 1.0, itemCount: 4 },
+      { name: 'Floor 3: Dark Chambers', enemyCount: 7, enemyHealthMult: 1.2, enemyDamageMult: 1.1, itemCount: 5 },
+      { name: 'Floor 4: Ancient Ruins', enemyCount: 9, enemyHealthMult: 1.5, enemyDamageMult: 1.3, itemCount: 6 },
+      { name: 'Floor 5: The Abyss', enemyCount: 11, enemyHealthMult: 1.8, enemyDamageMult: 1.5, itemCount: 7 }
+    ]
+    
     // Game loop
     let animationFrameId = null
     let lastTime = 0
@@ -733,8 +777,8 @@ export default {
         try {
           generateMaze()
           spawnPlayer()
-          spawnEnemies(5 + currentFloor.value * 2)
-          spawnItems(3 + currentFloor.value)
+          spawnEnemies(config.enemyCount)
+          spawnItems(config.itemCount)
           spawnExit()
           loading.value = false
           gameTime.value = 0
@@ -808,7 +852,7 @@ export default {
       let x = startX
       let y = startY
       
-      while (x !== endX || y !== endY) {
+      for (let attempts = 0; attempts < 1000 && (x !== endX || y !== endY); attempts++) {
         // Clear the current tile
         walls.value = walls.value.filter(wall => 
           !(Math.floor(wall.x / tileSize) === x && Math.floor(wall.y / tileSize) === y)
@@ -902,9 +946,7 @@ export default {
         safeY = Math.floor(Math.random() * (mazeHeight - 4)) + 2
         attempts++
       } while (
-        walls.value.some(wall => 
-          Math.floor(wall.x / tileSize) === safeX && Math.floor(wall.y / tileSize) === safeY
-        ) && attempts < 100
+        checkWallCollision(safeX * tileSize + tileSize / 2, safeY * tileSize + tileSize / 2, player.width, player.height) && attempts < 100
       )
       
       player.x = safeX * tileSize + tileSize / 2
@@ -936,6 +978,7 @@ export default {
     }
     
     const spawnEnemies = (count) => {
+      const config = levelConfigs[Math.min(currentFloor.value - 1, levelConfigs.length - 1)]
       enemies.value = []
       
       for (let i = 0; i < count; i++) {
@@ -1010,9 +1053,9 @@ export default {
           color: type.color,
           name: type.name,
           speed: type.speed * currentDifficulty.value.enemyMultiplier,
-          health: type.health * currentDifficulty.value.enemyMultiplier,
-          maxHealth: type.health * currentDifficulty.value.enemyMultiplier,
-          damage: type.damage * currentDifficulty.value.damageMultiplier,
+          health: type.health * currentDifficulty.value.enemyMultiplier * config.enemyHealthMult,
+          maxHealth: type.health * currentDifficulty.value.enemyMultiplier * config.enemyHealthMult,
+          damage: type.damage * currentDifficulty.value.damageMultiplier * config.enemyDamageMult,
           experience: type.experience,
           icon: type.icon,
           state: 'idle',
@@ -1179,6 +1222,12 @@ export default {
       
       // Check for exit
       checkExit()
+      
+      // Check if all enemies defeated
+      if (enemies.value.length === 0 && !gameOver.value) {
+        showLevelComplete.value = true
+        gamePaused.value = true
+      }
     }
     
     const updatePlayer = (deltaTime) => {
@@ -1850,13 +1899,14 @@ const dash = () => {
     // 9. RENDERING
     // ==========================================
     const renderGame = () => {
-      const canvas = gameCanvas.value
-      if (!canvas) return
-      
-      const ctx = canvas.getContext('2d')
-      
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      try {
+        const canvas = gameCanvas.value
+        if (!canvas) return
+        
+        const ctx = canvas.getContext('2d')
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
       
       // Draw background
       ctx.fillStyle = '#1a1a2e'
@@ -2038,10 +2088,10 @@ const dash = () => {
       ctx.shadowOffsetX = 0
       ctx.shadowOffsetY = 0
       ctx.fillStyle = '#FFFFFF'
-      ctx.font = 'bold 18px Arial'
+      ctx.font = 'bold 24px Arial'
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText(player.isBlocking ? '🛡️' : '⚔️', player.x, player.y)
+      ctx.fillText(player.isBlocking ? '🛡️' : '🧑', player.x, player.y)
       
       // Dash effect
       if (player.isDashing) {
@@ -2081,6 +2131,9 @@ const dash = () => {
       
       // Draw HUD elements on top
       drawHUD(ctx)
+      } catch (error) {
+        console.error('Render error:', error)
+      }
     }
     
     const drawHUD = (ctx) => {
@@ -2321,8 +2374,12 @@ const dash = () => {
     }
     
     const nextFloor = () => {
+      gameOver.value = false
       currentFloor.value++
-      addNotification(`Advanced to Floor ${currentFloor.value}!`, 'success')
+      
+      const config = levelConfigs[Math.min(currentFloor.value - 1, levelConfigs.length - 1)]
+      
+      addNotification(`${config.name}!`, 'success')
       
       // Level up check
       if (player.xp >= player.level * 100) {
@@ -2332,8 +2389,8 @@ const dash = () => {
       // Generate new maze
       generateMaze()
       spawnPlayer()
-      spawnEnemies(5 + currentFloor.value * 2)
-      spawnItems(3 + currentFloor.value)
+      spawnEnemies(config.enemyCount)
+      spawnItems(config.itemCount)
       spawnExit()
       
       // Heal player a bit
@@ -2360,6 +2417,18 @@ const dash = () => {
       createParticles(player.x, player.y, 20, '#FFD700')
       screenShake(20)
       playSFX('levelup')
+    }
+    
+    const confirmNextLevel = () => {
+      showLevelComplete.value = false
+      gamePaused.value = false
+      nextFloor()
+    }
+    
+    const backToMenuFromLevel = () => {
+      showLevelComplete.value = false
+      gamePaused.value = false
+      showMainMenu.value = true
     }
 
     const retryGame = () => {
@@ -2638,6 +2707,7 @@ const dash = () => {
       showMobileMenu,
       showMinimap,
       showTutorial,
+      showLevelComplete,
       
       // Game data
       player,
@@ -2675,6 +2745,8 @@ const dash = () => {
       // Methods
       startNewGame,
       continueGame,
+      confirmNextLevel,
+      backToMenuFromLevel,
       toggleInventory,
       toggleMobileMenu,
       hideTutorial,
@@ -2751,7 +2823,7 @@ body {
   width: 100%;
   height: 100%;
   background: #1a1a2e;
-  cursor: none;
+  cursor: default;
 }
 
 /* ==========================================
@@ -3112,13 +3184,13 @@ body {
 
 .joystick-container {
   position: absolute;
-  bottom: 100px;
-  left: 40px;
+  bottom: 120px;
+  left: 50px;
 }
 
 .joystick-base {
-  width: 100px;
-  height: 100px;
+  width: 120px;
+  height: 120px;
   background: rgba(0, 0, 0, 0.5);
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
@@ -3127,34 +3199,34 @@ body {
 }
 
 .joystick-thumb {
-  width: 50px;
-  height: 50px;
+  width: 60px;
+  height: 60px;
   background: rgba(255, 255, 255, 0.8);
   border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   position: absolute;
-  top: 25px;
-  left: 25px;
+  top: 30px;
+  left: 30px;
   transition: transform 0.1s ease;
 }
 
 .mobile-actions {
   position: absolute;
-  bottom: 40px;
-  right: 40px;
+  bottom: 60px;
+  right: 50px;
   display: flex;
-  gap: 15px;
+  gap: 20px;
   flex-wrap: wrap;
   justify-content: flex-end;
-  max-width: 250px;
+  max-width: 300px;
 }
 
 .mobile-btn {
-  width: 70px;
-  height: 70px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   border: none;
-  font-size: 32px;
+  font-size: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3190,7 +3262,7 @@ body {
 .mobile-btn.menu {
   background: rgba(0, 0, 0, 0.7);
   color: white;
-  font-size: 28px;
+  font-size: 36px;
 }
 
 /* ==========================================
@@ -3284,19 +3356,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 0;
 }
 
 .main-menu {
   background: rgba(0, 0, 0, 0.8);
   border: 3px solid #4CAF50;
   border-radius: 20px;
-  padding: 30px;
-  max-width: 800px;
+  padding: clamp(20px, 4vw, 30px);
+  max-width: 90vw;
+  max-height: 90vh;
   width: 100%;
   color: white;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
   animation: menu-appear 0.5s ease;
+  overflow-y: auto;
 }
 
 @keyframes menu-appear {
@@ -3311,7 +3385,7 @@ body {
 }
 
 .game-title {
-  font-size: 48px;
+  font-size: clamp(32px, 6vw, 48px);
   text-align: center;
   margin-bottom: 30px;
   color: #4CAF50;
@@ -3973,6 +4047,77 @@ input:checked + .toggle-slider:before {
 }
 
 /* ==========================================
+   LEVEL COMPLETE
+   ========================================== */
+.level-complete-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.level-complete-screen {
+  background: rgba(0, 0, 0, 0.9);
+  border: 3px solid #4CAF50;
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 400px;
+  width: 90%;
+  color: white;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+
+.level-complete-title {
+  font-size: 32px;
+  color: #4CAF50;
+  margin-bottom: 20px;
+  text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+.level-complete-stats {
+  margin-bottom: 30px;
+}
+
+.level-complete-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.level-complete-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.level-complete-btn.next {
+  background: linear-gradient(135deg, #4CAF50, #388E3C);
+  color: white;
+}
+
+.level-complete-btn.menu {
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+  color: white;
+}
+
+.level-complete-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================
    TUTORIAL
    ========================================== */
 .tutorial-overlay {
@@ -4347,6 +4492,25 @@ input:checked + .toggle-slider:before {
   
   .dialog-text {
     font-size: 16px;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE DESIGN
+   ========================================== */
+@media (max-width: 768px) {
+  .main-menu {
+    padding: 20px;
+  }
+  
+  .menu-btn {
+    font-size: 16px;
+    padding: 12px 20px;
+  }
+  
+  .diff-btn {
+    font-size: 14px;
+    padding: 8px 16px;
   }
 }
 </style>
