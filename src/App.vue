@@ -576,7 +576,7 @@ export default {
     const joystickBase = ref(null)
     
     const isMobile = ref(false)
-    const loading = ref(true)
+    const loading = ref(false)
     const loadingProgress = ref(0)
     const gameOver = ref(false)
     const gameOverReason = ref('death')
@@ -677,8 +677,8 @@ export default {
     const quickSlots = ref(Array(5).fill().map(() => ({ item: null })))
     
     // Maze configuration
-    const mazeWidth = 50
-    const mazeHeight = 50
+    const mazeWidth = 20
+    const mazeHeight = 20
     const tileSize = 64
     const minimapTiles = ref([])
     
@@ -708,6 +708,7 @@ export default {
     // 3. GAME INITIALIZATION
     // ==========================================
     const initGame = () => {
+      showMainMenu.value = false
       loading.value = true
       loadingProgress.value = 0
       
@@ -724,52 +725,82 @@ export default {
         setTimeout(() => {
           loadingProgress.value = ((index + 1) / steps.length) * 100
           console.log(step)
-        }, index * 500)
+        }, index * 1000)
       })
       
       // Complete loading
       setTimeout(() => {
-        generateMaze()
-        spawnPlayer()
-        spawnEnemies(5 + currentFloor.value * 2)
-        spawnItems(3 + currentFloor.value)
-        spawnExit()
-        loading.value = false
-        gameTime.value = 0
-        enemiesDefeated.value = 0
-        itemsCollected.value = 0
-        showMainMenu.value = false
-      }, steps.length * 500)
+        try {
+          generateMaze()
+          spawnPlayer()
+          spawnEnemies(5 + currentFloor.value * 2)
+          spawnItems(3 + currentFloor.value)
+          spawnExit()
+          loading.value = false
+          gameTime.value = 0
+          enemiesDefeated.value = 0
+          itemsCollected.value = 0
+          showMainMenu.value = false
+          console.log('Game initialized successfully')
+        } catch (error) {
+          console.error('Error initializing game:', error)
+          loading.value = false
+          showMainMenu.value = false
+          addNotification('Failed to initialize game. Please refresh.', 'error')
+        }
+      }, steps.length * 1000)
     }
     
     const generateMaze = () => {
-      // Reset maze
+      try {
+        // Reset maze
+        walls.value = []
+        floors.value = []
+        
+        // Create a simple maze algorithm
+        for (let y = 0; y < mazeHeight; y++) {
+          for (let x = 0; x < mazeWidth; x++) {
+            // Create border walls
+            if (x === 0 || y === 0 || x === mazeWidth - 1 || y === mazeHeight - 1) {
+              walls.value.push({ x: x * tileSize, y: y * tileSize, width: tileSize, height: tileSize })
+            } 
+            // Create some random walls
+            else if (Math.random() > 0.7) {
+              walls.value.push({ x: x * tileSize, y: y * tileSize, width: tileSize, height: tileSize })
+            } 
+            // Create floor
+            else {
+              floors.value.push({ x: x * tileSize, y: y * tileSize, width: tileSize, height: tileSize })
+            }
+          }
+        }
+        
+        // Ensure there's a clear path
+        createPath(1, 1, mazeWidth - 2, mazeHeight - 2)
+        
+        // Update minimap
+        updateMinimap()
+      } catch (error) {
+        console.error('Error generating maze:', error)
+        // Fallback to simple maze
+        createSimpleMaze()
+      }
+    }
+
+    const createSimpleMaze = () => {
       walls.value = []
       floors.value = []
       
-      // Create a simple maze algorithm (can be improved)
+      // Create border
       for (let y = 0; y < mazeHeight; y++) {
         for (let x = 0; x < mazeWidth; x++) {
-          // Create border walls
           if (x === 0 || y === 0 || x === mazeWidth - 1 || y === mazeHeight - 1) {
             walls.value.push({ x: x * tileSize, y: y * tileSize, width: tileSize, height: tileSize })
-          } 
-          // Create some random walls
-          else if (Math.random() > 0.7) {
-            walls.value.push({ x: x * tileSize, y: y * tileSize, width: tileSize, height: tileSize })
-          } 
-          // Create floor
-          else {
+          } else {
             floors.value.push({ x: x * tileSize, y: y * tileSize, width: tileSize, height: tileSize })
           }
         }
       }
-      
-      // Ensure there's a clear path
-      createPath(1, 1, mazeWidth - 2, mazeHeight - 2)
-      
-      // Update minimap
-      updateMinimap()
     }
     
     const createPath = (startX, startY, endX, endY) => {
@@ -2310,7 +2341,7 @@ const dash = () => {
       player.stamina = player.maxStamina
     }
     
-    const levelUp = () => {  // PERBAIKAN: Tambahkan =>
+    const levelUp = () => {
       player.level++
       player.xp = 0
       
@@ -2330,7 +2361,7 @@ const dash = () => {
       screenShake(20)
       playSFX('levelup')
     }
-    
+
     const retryGame = () => {
       gameOver.value = false
       startNewGame()
