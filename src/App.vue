@@ -3887,17 +3887,17 @@ body {
    ========================================== */
 .mobile-controls {
   position: absolute;
-  bottom: 0;
+  bottom: 220px;
   left: 0;
   right: 0;
-  height: 180px;
+  height: 160px;
   z-index: 150;
   pointer-events: none;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
-  padding: 15px;
-  background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.6) 0%, transparent 100%);
 }
 
 .mobile-controls > * {
@@ -3906,33 +3906,33 @@ body {
 
 .joystick-container {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 140px;
+  height: 140px;
 }
 
 .joystick-base {
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.6);
-  border: 3px solid rgba(255,255,255,0.4);
+  background: rgba(0,0,0,0.7);
+  border: 4px solid rgba(255,255,255,0.5);
   border-radius: 50%;
   position: relative;
   touch-action: none;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
 }
 
 .joystick-thumb {
-  width: 50px;
-  height: 50px;
-  background: rgba(255,255,255,0.9);
-  border: 2px solid rgba(255,255,255,0.6);
+  width: 60px;
+  height: 60px;
+  background: rgba(255,255,255,0.95);
+  border: 3px solid rgba(255,255,255,0.7);
   border-radius: 50%;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   transition: transform 0.1s ease;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
 
 .mobile-actions {
@@ -3940,9 +3940,9 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr 1fr;
-  gap: 10px;
-  width: 160px;
-  height: 150px;
+  gap: 15px;
+  width: 200px;
+  height: 160px;
 }
 
 .mobile-action-row {
@@ -3954,19 +3954,20 @@ body {
   height: 100%;
   border-radius: 50%;
   border: none;
-  font-size: 24px;
+  font-size: 32px;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: all 0.2s ease;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.5);
   touch-action: manipulation;
 }
 
 .mobile-btn:active {
   transform: scale(0.85);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.4);
 }
 
 .mobile-btn.attack {
@@ -4002,7 +4003,8 @@ body {
   color: white;
   grid-column: 1 / 3;
   grid-row: 3;
-  border-radius: 25px;
+  border-radius: 30px;
+  font-size: 24px;
 }
 
 /* ==========================================
