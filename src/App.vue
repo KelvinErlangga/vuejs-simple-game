@@ -3,8 +3,8 @@
     <!-- Canvas untuk Game -->
     <canvas ref="gameCanvas" class="game-canvas"></canvas>
     
-    <!-- Minimap -->
-    <div class="minimap" v-if="!isMobile || showMinimap">
+    <!-- Minimap Desktop -->
+    <div class="minimap" v-if="!isMobile && showMinimap">
       <div class="minimap-content">
         <div class="minimap-grid">
           <div 
@@ -31,8 +31,36 @@
       </div>
     </div>
 
-    <!-- HUD Utama -->
-    <div class="game-hud">
+    <!-- Minimap Mobile -->
+    <div class="mobile-minimap" v-if="isMobile && showMinimap">
+      <div class="mobile-minimap-content">
+        <div class="mobile-minimap-grid">
+          <div 
+            v-for="(row, y) in minimapTiles" 
+            :key="y"
+            class="mobile-minimap-row"
+          >
+            <div 
+              v-for="(tile, x) in row" 
+              :key="x"
+              class="mobile-minimap-tile"
+              :class="{
+                wall: tile === 1,
+                floor: tile === 0,
+                player: tile === 'player',
+                enemy: tile === 'enemy',
+                item: tile === 'item',
+                exit: tile === 'exit',
+                fog: !isTileVisible(x, y)
+              }"
+            ></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HUD Desktop -->
+    <div class="game-hud" v-if="!isMobile">
       <!-- Health Bar -->
       <div class="health-bar">
         <div class="health-fill" :style="{ width: player.health + '%' }"></div>
@@ -66,8 +94,59 @@
       </div>
     </div>
 
-    <!-- Inventory Quick Access -->
-    <div class="quick-inventory">
+    <!-- HUD Mobile -->
+    <div class="mobile-hud" v-if="isMobile">
+      <!-- Top Bar -->
+      <div class="mobile-top-bar">
+        <!-- Health & Stamina -->
+        <div class="mobile-stats-left">
+          <div class="mobile-health-bar">
+            <div class="mobile-health-fill" :style="{ width: player.health + '%' }"></div>
+            <span class="mobile-health-text">❤️ {{ Math.ceil(player.health) }}</span>
+          </div>
+          <div class="mobile-stamina-bar">
+            <div class="mobile-stamina-fill" :style="{ width: player.stamina + '%' }"></div>
+            <span class="mobile-stamina-text">⚡ {{ Math.ceil(player.stamina) }}</span>
+          </div>
+        </div>
+        
+        <!-- Level & XP -->
+        <div class="mobile-level-info">
+          <div class="mobile-level">Lv.{{ player.level }}</div>
+          <div class="mobile-xp-bar">
+            <div class="mobile-xp-fill" :style="{ width: (player.xp % 100) + '%' }"></div>
+          </div>
+        </div>
+        
+        <!-- Quick Inventory -->
+        <div class="mobile-quick-inventory">
+          <div 
+            v-for="(slot, index) in quickSlots.slice(0, 3)" 
+            :key="index"
+            class="mobile-quick-slot"
+            :class="{ active: selectedQuickSlot === index, empty: !slot.item }"
+            @click="selectQuickSlot(index)"
+          >
+            <span v-if="slot.item" class="mobile-slot-icon">{{ slot.item.icon }}</span>
+            <span v-else class="mobile-slot-number">{{ index + 1 }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Status Effects -->
+      <div class="mobile-status-effects" v-if="activeStatusEffects.length > 0">
+        <div 
+          v-for="effect in activeStatusEffects" 
+          :key="effect.id"
+          class="mobile-status-effect"
+        >
+          <span class="mobile-effect-icon">{{ effect.icon }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Quick Access Desktop -->
+    <div class="quick-inventory" v-if="!isMobile">
       <div 
         v-for="(slot, index) in quickSlots" 
         :key="index"
@@ -87,88 +166,88 @@
     </div>
 
     <!-- Kontrol Desktop -->
-    <div class="desktop-controls" v-if="!isMobile">
-      <div class="movement-keys">
+    <!-- Movement Keys (Kiri) -->
+    <div class="movement-keys" v-if="!isMobile">
+      <button 
+        class="key-btn w" 
+        :class="{ active: keys.w }"
+        @mousedown="keyDown('w')"
+        @mouseup="keyUp('w')"
+        @touchstart.prevent="keyDown('w')"
+        @touchend.prevent="keyUp('w')"
+      >
+        W
+      </button>
+      <div class="horizontal-keys">
         <button 
-          class="key-btn w" 
-          :class="{ active: keys.w }"
-          @mousedown="keyDown('w')"
-          @mouseup="keyUp('w')"
-          @touchstart.prevent="keyDown('w')"
-          @touchend.prevent="keyUp('w')"
+          class="key-btn a" 
+          :class="{ active: keys.a }"
+          @mousedown="keyDown('a')"
+          @mouseup="keyUp('a')"
+          @touchstart.prevent="keyDown('a')"
+          @touchend.prevent="keyUp('a')"
         >
-          W
+          A
         </button>
-        <div class="horizontal-keys">
-          <button 
-            class="key-btn a" 
-            :class="{ active: keys.a }"
-            @mousedown="keyDown('a')"
-            @mouseup="keyUp('a')"
-            @touchstart.prevent="keyDown('a')"
-            @touchend.prevent="keyUp('a')"
-          >
-            A
-          </button>
-          <button 
-            class="key-btn s" 
-            :class="{ active: keys.s }"
-            @mousedown="keyDown('s')"
-            @mouseup="keyUp('s')"
-            @touchstart.prevent="keyDown('s')"
-            @touchend.prevent="keyUp('s')"
-          >
-            S
-          </button>
-          <button 
-            class="key-btn d" 
-            :class="{ active: keys.d }"
-            @mousedown="keyDown('d')"
-            @mouseup="keyUp('d')"
-            @touchstart.prevent="keyDown('d')"
-            @touchend.prevent="keyUp('d')"
-          >
-            D
-          </button>
-        </div>
+        <button 
+          class="key-btn s" 
+          :class="{ active: keys.s }"
+          @mousedown="keyDown('s')"
+          @mouseup="keyUp('s')"
+          @touchstart.prevent="keyDown('s')"
+          @touchend.prevent="keyUp('s')"
+        >
+          S
+        </button>
+        <button 
+          class="key-btn d" 
+          :class="{ active: keys.d }"
+          @mousedown="keyDown('d')"
+          @mouseup="keyUp('d')"
+          @touchstart.prevent="keyDown('d')"
+          @touchend.prevent="keyUp('d')"
+        >
+          D
+        </button>
       </div>
+    </div>
 
-      <div class="action-buttons">
-        <button 
-          class="action-btn attack"
-          @click="performAction('attack')"
-          @touchstart.prevent="performAction('attack')"
-        >
-          <span class="btn-icon">⚔️</span>
-          Attack
-        </button>
-        <button 
-          class="action-btn block"
-          @mousedown="startBlocking"
-          @mouseup="stopBlocking"
-          @touchstart.prevent="startBlocking"
-          @touchend.prevent="stopBlocking"
-        >
-          <span class="btn-icon">🛡️</span>
-          Block
-        </button>
-        <button 
-          class="action-btn dash"
-          @click="performAction('dash')"
-          @touchstart.prevent="performAction('dash')"
-        >
-          <span class="btn-icon">💨</span>
-          Dash
-        </button>
-        <button 
-          class="action-btn use"
-          @click="useSelectedItem"
-          @touchstart.prevent="useSelectedItem"
-        >
-          <span class="btn-icon">🫴</span>
-          Use
-        </button>
-      </div>
+    <!-- Action Buttons (Kanan) -->
+    <div class="action-buttons" v-if="!isMobile">
+      <button 
+        class="action-btn attack"
+        @click="performAction('attack')"
+        @touchstart.prevent="performAction('attack')"
+      >
+        <span class="btn-icon">⚔️</span>
+        Attack
+      </button>
+      <button 
+        class="action-btn block"
+        @mousedown="startBlocking"
+        @mouseup="stopBlocking"
+        @touchstart.prevent="startBlocking"
+        @touchend.prevent="stopBlocking"
+      >
+        <span class="btn-icon">🛡️</span>
+        Block
+      </button>
+      <button 
+        class="action-btn dash"
+        @click="performAction('dash')"
+        @touchstart.prevent="performAction('dash')"
+      >
+        <span class="btn-icon">💨</span>
+        Dash
+      </button>
+      <button 
+        class="action-btn use"
+        @click="useSelectedItem"
+        @touchstart.prevent="useSelectedItem"
+      >
+        <span class="btn-icon">🫴</span>
+        Use
+      </button>
     </div>
 
     <!-- Kontrol Mobile -->
@@ -191,39 +270,45 @@
         </div>
       </div>
 
-      <!-- Action Buttons -->
+      <!-- Action Buttons Kanan -->
       <div class="mobile-actions">
-        <button 
-          class="mobile-btn attack"
-          @touchstart.prevent="performAction('attack')"
-        >
-          ⚔️
-        </button>
-        <button 
-          class="mobile-btn block"
-          @touchstart.prevent="startBlocking"
-          @touchend.prevent="stopBlocking"
-        >
-          🛡️
-        </button>
-        <button 
-          class="mobile-btn dash"
-          @touchstart.prevent="performAction('dash')"
-        >
-          💨
-        </button>
-        <button 
-          class="mobile-btn use"
-          @touchstart.prevent="useSelectedItem"
-        >
-          🫴
-        </button>
-        <button 
-          class="mobile-btn menu"
-          @click="toggleMobileMenu"
-        >
-          ☰
-        </button>
+        <div class="mobile-action-row">
+          <button 
+            class="mobile-btn attack"
+            @touchstart.prevent="performAction('attack')"
+          >
+            ⚔️
+          </button>
+          <button 
+            class="mobile-btn block"
+            @touchstart.prevent="startBlocking"
+            @touchend.prevent="stopBlocking"
+          >
+            🛡️
+          </button>
+        </div>
+        <div class="mobile-action-row">
+          <button 
+            class="mobile-btn dash"
+            @touchstart.prevent="performAction('dash')"
+          >
+            💨
+          </button>
+          <button 
+            class="mobile-btn use"
+            @touchstart.prevent="useSelectedItem"
+          >
+            🫴
+          </button>
+        </div>
+        <div class="mobile-action-row">
+          <button 
+            class="mobile-btn menu"
+            @click="toggleMobileMenu"
+          >
+            ☰
+          </button>
+        </div>
       </div>
     </div>
 
@@ -776,11 +861,17 @@ export default {
       // Complete loading
       setTimeout(() => {
         try {
+          const config = levelConfigs[Math.min(currentFloor.value - 1, levelConfigs.length - 1)]
+          
           generateMaze()
           spawnPlayer()
           spawnEnemies(config.enemyCount)
           spawnItems(config.itemCount)
           spawnExit()
+          
+          // Apply difficulty to enemies
+          applyDifficultyToEnemies()
+          
           loading.value = false
           gameTime.value = 0
           enemiesDefeated.value = 0
@@ -938,7 +1029,7 @@ export default {
     }
     
     const spawnPlayer = () => {
-      // Find a safe starting position
+      // Find a safe starting position with enhanced checking
       let safeX, safeY
       let attempts = 0
       
@@ -946,12 +1037,36 @@ export default {
         safeX = Math.floor(Math.random() * (mazeWidth - 4)) + 2
         safeY = Math.floor(Math.random() * (mazeHeight - 4)) + 2
         attempts++
-      } while (
-        checkWallCollision(safeX * tileSize + tileSize / 2, safeY * tileSize + tileSize / 2, player.width, player.height) && attempts < 100
-      )
+        
+        const testX = safeX * tileSize + tileSize / 2
+        const testY = safeY * tileSize + tileSize / 2
+        
+        // Enhanced safety check with margin
+        const margin = 5
+        if (
+          !checkWallCollision(testX - margin, testY - margin, player.width + margin * 2, player.height + margin * 2) &&
+          !checkWallCollision(testX, testY, player.width, player.height)
+        ) {
+          break
+        }
+      } while (attempts < 200)
+      
+      if (attempts >= 200) {
+        // Fallback to center position
+        safeX = Math.floor(mazeWidth / 2)
+        safeY = Math.floor(mazeHeight / 2)
+        console.warn('Could not find safe spawn position, using center')
+      }
       
       player.x = safeX * tileSize + tileSize / 2
       player.y = safeY * tileSize + tileSize / 2
+      
+      // Final safety check
+      if (checkWallCollision(player.x, player.y)) {
+        // Emergency reposition
+        player.x = tileSize * 2 + tileSize / 2
+        player.y = tileSize * 2 + tileSize / 2
+      }
       
       // Initialize inventory
       player.inventory = [
@@ -1053,10 +1168,10 @@ export default {
           height: 28,
           color: type.color,
           name: type.name,
-          speed: type.speed * currentDifficulty.value.enemyMultiplier,
-          health: type.health * currentDifficulty.value.enemyMultiplier * config.enemyHealthMult,
-          maxHealth: type.health * currentDifficulty.value.enemyMultiplier * config.enemyHealthMult,
-          damage: type.damage * currentDifficulty.value.damageMultiplier * config.enemyDamageMult,
+          speed: type.speed,
+          health: type.health * config.enemyHealthMult,
+          maxHealth: type.health * config.enemyHealthMult,
+          damage: type.damage * config.enemyDamageMult,
           experience: type.experience,
           icon: type.icon,
           state: 'idle',
@@ -1067,6 +1182,25 @@ export default {
           attackRange: 40
         })
       }
+      
+      // Apply difficulty settings to all spawned enemies
+      applyDifficultyToEnemies()
+    }
+    
+    const applyDifficultyToEnemies = () => {
+      const diff = currentDifficulty.value
+      if (!diff) return
+      
+      enemies.value.forEach(enemy => {
+        const baseHealth = enemy.maxHealth / (diff.enemyMultiplier || 1)
+        const baseDamage = enemy.damage / (diff.damageMultiplier || 1)
+        
+        enemy.maxHealth = baseHealth * diff.enemyMultiplier
+        enemy.health = enemy.maxHealth
+        enemy.damage = baseDamage * diff.damageMultiplier
+      })
+      
+      console.log(`Applied difficulty ${diff.name} to ${enemies.value.length} enemies`)
     }
     
     const spawnItems = (count) => {
@@ -1268,12 +1402,49 @@ export default {
       const newX = player.x + moveX * speed
       const newY = player.y + moveY * speed
       
-      // Check wall collisions
-      if (!checkWallCollision(newX, player.y)) {
+      // Enhanced collision detection with sliding
+      const collision = getWallCollisionResponse(newX, newY)
+      
+      // Apply sliding movement to prevent getting stuck
+      if (!checkWallCollision(newX, newY)) {
+        // No collision, move normally
         player.x = newX
-      }
-      if (!checkWallCollision(player.x, newY)) {
         player.y = newY
+      } else {
+        // Collision detected, try sliding
+        if (!checkWallCollision(collision.slideX, player.y)) {
+          player.x = collision.slideX
+        }
+        if (!checkWallCollision(player.x, collision.slideY)) {
+          player.y = collision.slideY
+        }
+      }
+      
+      // Additional safety check: ensure player is never inside a wall
+      if (checkWallCollision(player.x, player.y)) {
+        // Emergency: push player to nearest safe position
+        let foundSafePosition = false
+        for (let distance = 1; distance <= 50 && !foundSafePosition; distance++) {
+          const directions = [
+            { x: player.x + distance, y: player.y },
+            { x: player.x - distance, y: player.y },
+            { x: player.x, y: player.y + distance },
+            { x: player.x, y: player.y - distance },
+            { x: player.x + distance, y: player.y + distance },
+            { x: player.x - distance, y: player.y - distance },
+            { x: player.x + distance, y: player.y - distance },
+            { x: player.x - distance, y: player.y + distance }
+          ]
+          
+          for (const pos of directions) {
+            if (!checkWallCollision(pos.x, pos.y)) {
+              player.x = pos.x
+              player.y = pos.y
+              foundSafePosition = true
+              break
+            }
+          }
+        }
       }
       
       // Regenerate stamina
@@ -1330,12 +1501,45 @@ export default {
             const newX = enemy.x + normX * enemy.speed
             const newY = enemy.y + normY * enemy.speed
             
-            // Check wall collisions
-            if (!checkWallCollision(newX, enemy.y, enemy.width, enemy.height)) {
+            // Enhanced collision detection with sliding for enemies
+            const collision = getWallCollisionResponse(newX, newY, enemy.width, enemy.height)
+            
+            // Apply sliding movement to prevent getting stuck
+            if (!checkWallCollision(newX, newY, enemy.width, enemy.height)) {
+              // No collision, move normally
               enemy.x = newX
-            }
-            if (!checkWallCollision(enemy.x, newY, enemy.width, enemy.height)) {
               enemy.y = newY
+            } else {
+              // Collision detected, try sliding
+              if (!checkWallCollision(collision.slideX, enemy.y, enemy.width, enemy.height)) {
+                enemy.x = collision.slideX
+              }
+              if (!checkWallCollision(enemy.x, collision.slideY, enemy.width, enemy.height)) {
+                enemy.y = collision.slideY
+              }
+            }
+            
+            // Additional safety check for enemies
+            if (checkWallCollision(enemy.x, enemy.y, enemy.width, enemy.height)) {
+              // Emergency: push enemy to nearest safe position
+              let foundSafePosition = false
+              for (let distance = 1; distance <= 30 && !foundSafePosition; distance++) {
+                const directions = [
+                  { x: enemy.x + distance, y: enemy.y },
+                  { x: enemy.x - distance, y: enemy.y },
+                  { x: enemy.x, y: enemy.y + distance },
+                  { x: enemy.x, y: enemy.y - distance }
+                ]
+                
+                for (const pos of directions) {
+                  if (!checkWallCollision(pos.x, pos.y, enemy.width, enemy.height)) {
+                    enemy.x = pos.x
+                    enemy.y = pos.y
+                    foundSafePosition = true
+                    break
+                  }
+                }
+              }
             }
           }
           
@@ -1497,6 +1701,56 @@ export default {
         }
       }
       return false
+    }
+    
+    // Enhanced collision detection with sliding response
+    const getWallCollisionResponse = (newX, newY, width = player.width, height = player.height) => {
+      const halfWidth = width / 2
+      const halfHeight = height / 2
+      let collisionX = false
+      let collisionY = false
+      let slideX = newX
+      let slideY = newY
+      
+      for (const wall of walls.value) {
+        // Check if player would collide with this wall
+        if (
+          newX + halfWidth > wall.x &&
+          newX - halfWidth < wall.x + wall.width &&
+          newY + halfHeight > wall.y &&
+          newY - halfHeight < wall.y + wall.height
+        ) {
+          // Calculate overlap on each axis
+          const overlapLeft = (newX + halfWidth) - wall.x
+          const overlapRight = (wall.x + wall.width) - (newX - halfWidth)
+          const overlapTop = (newY + halfHeight) - wall.y
+          const overlapBottom = (wall.y + wall.height) - (newY - halfHeight)
+          
+          // Find minimum overlap for sliding
+          const minOverlapX = Math.min(overlapLeft, overlapRight)
+          const minOverlapY = Math.min(overlapTop, overlapBottom)
+          
+          if (minOverlapX < minOverlapY) {
+            // Horizontal collision is smaller, slide horizontally
+            if (overlapLeft < overlapRight) {
+              slideX = wall.x - halfWidth - 1 // Slide to left of wall
+            } else {
+              slideX = wall.x + wall.width + halfWidth + 1 // Slide to right of wall
+            }
+            collisionX = true
+          } else {
+            // Vertical collision is smaller, slide vertically
+            if (overlapTop < overlapBottom) {
+              slideY = wall.y - halfHeight - 1 // Slide above wall
+            } else {
+              slideY = wall.y + wall.height + halfHeight + 1 // Slide below wall
+            }
+            collisionY = true
+          }
+        }
+      }
+      
+      return { collisionX, collisionY, slideX, slideY }
     }
     
     const checkCollisions = () => {
@@ -2454,43 +2708,95 @@ const dash = () => {
     // 12. SAVE/LOAD SYSTEM
     // ==========================================
     const saveGame = () => {
-      const saveData = {
-        player: {
-          level: player.level,
-          xp: player.xp,
-          health: player.health,
-          stamina: player.stamina,
-          inventory: player.inventory,
-          equippedWeapon: player.equippedWeapon,
-          equippedArmor: player.equippedArmor
-        },
-        currentFloor: currentFloor.value,
-        gameTime: gameTime.value,
-        enemiesDefeated: enemiesDefeated.value,
-        itemsCollected: itemsCollected.value,
-        statistics: statistics
+      try {
+        const saveData = {
+          player: {
+            x: player.x,
+            y: player.y,
+            level: player.level,
+            xp: player.xp,
+            health: player.health,
+            maxHealth: player.maxHealth,
+            stamina: player.stamina,
+            maxStamina: player.maxStamina,
+            speed: player.speed,
+            baseSpeed: player.baseSpeed,
+            damage: player.damage,
+            defense: player.defense,
+            direction: player.direction,
+            inventory: player.inventory,
+            equippedWeapon: player.equippedWeapon,
+            equippedArmor: player.equippedArmor
+          },
+          game: {
+            currentFloor: currentFloor.value,
+            gameTime: gameTime.value,
+            enemiesDefeated: enemiesDefeated.value,
+            itemsCollected: itemsCollected.value,
+            gameDifficulty: gameDifficulty.value,
+            musicVolume: musicVolume.value,
+            sfxVolume: sfxVolume.value,
+            musicEnabled: musicEnabled.value,
+            sfxEnabled: sfxEnabled.value,
+            showMinimap: showMinimap.value
+          },
+          statistics: statistics,
+          timestamp: Date.now(),
+          version: '1.0'
+        }
+        
+        localStorage.setItem('dungeon_maze_save', JSON.stringify(saveData))
+        addNotification('Game saved successfully!', 'success')
+        console.log('Game saved:', saveData)
+      } catch (error) {
+        console.error('Error saving game:', error)
+        addNotification('Failed to save game', 'error')
       }
-      
-      localStorage.setItem('dungeon_maze_save', JSON.stringify(saveData))
-      addNotification('Game saved!', 'save')
     }
     
     const loadGame = () => {
-      const saveData = localStorage.getItem('dungeon_maze_save')
-      if (saveData) {
-        const data = JSON.parse(saveData)
-        
-        Object.assign(player, data.player)
-        currentFloor.value = data.currentFloor
-        gameTime.value = data.gameTime
-        enemiesDefeated.value = data.enemiesDefeated
-        itemsCollected.value = data.itemsCollected
-        Object.assign(statistics, data.statistics)
-        
-        initGame()
-        addNotification('Game loaded!', 'save')
-      } else {
-        addNotification('No save data found', 'info')
+      try {
+        const saveData = localStorage.getItem('dungeon_maze_save')
+        if (saveData) {
+          const data = JSON.parse(saveData)
+          
+          // Validate save data
+          if (!data.player || !data.game) {
+            throw new Error('Invalid save data format')
+          }
+          
+          // Load player data
+          Object.assign(player, data.player)
+          
+          // Load game data
+          currentFloor.value = data.game.currentFloor
+          gameTime.value = data.game.gameTime
+          enemiesDefeated.value = data.game.enemiesDefeated
+          itemsCollected.value = data.game.itemsCollected
+          gameDifficulty.value = data.game.gameDifficulty || 'normal'
+          musicVolume.value = data.game.musicVolume || 50
+          sfxVolume.value = data.game.sfxVolume || 70
+          musicEnabled.value = data.game.musicEnabled !== undefined ? data.game.musicEnabled : true
+          sfxEnabled.value = data.game.sfxEnabled !== undefined ? data.game.sfxEnabled : true
+          showMinimap.value = data.game.showMinimap !== undefined ? data.game.showMinimap : true
+          
+          // Load statistics
+          if (data.statistics) {
+            Object.assign(statistics, data.statistics)
+          }
+          
+          // Hide main menu and initialize game
+          showMainMenu.value = false
+          initGame()
+          
+          addNotification('Game loaded successfully!', 'success')
+          console.log('Game loaded:', data)
+        } else {
+          addNotification('No save data found', 'info')
+        }
+      } catch (error) {
+        console.error('Error loading game:', error)
+        addNotification('Failed to load game: ' + error.message, 'error')
       }
     }
     
@@ -2551,8 +2857,28 @@ const dash = () => {
     }
     
     const setDifficulty = (difficulty) => {
+      const oldDifficulty = gameDifficulty.value
       gameDifficulty.value = difficulty
-      addNotification(`Difficulty set to ${difficulty.toUpperCase()}`, 'info')
+      
+      const diff = difficulties.find(d => d.id === difficulty)
+      if (diff) {
+        addNotification(`Difficulty set to ${diff.name}`, 'info')
+        console.log(`Difficulty changed from ${oldDifficulty} to ${difficulty}`)
+        console.log(`Enemy multiplier: ${diff.enemyMultiplier}, Damage multiplier: ${diff.damageMultiplier}`)
+        
+        // Apply difficulty settings to existing enemies if game is active
+        if (!showMainMenu.value && enemies.value.length > 0) {
+          enemies.value.forEach(enemy => {
+            const baseHealth = enemy.maxHealth / (oldDifficulty ? difficulties.find(d => d.id === oldDifficulty)?.enemyMultiplier || 1 : 1)
+            const baseDamage = enemy.damage / (oldDifficulty ? difficulties.find(d => d.id === oldDifficulty)?.damageMultiplier || 1 : 1)
+            
+            enemy.maxHealth = baseHealth * diff.enemyMultiplier
+            enemy.health = Math.min(enemy.health, enemy.maxHealth)
+            enemy.damage = baseDamage * diff.damageMultiplier
+          })
+          addNotification('Enemy stats updated!', 'info')
+        }
+      }
     }
     
     const selectQuickSlot = (index) => {
@@ -2575,13 +2901,90 @@ const dash = () => {
     const playSFX = (type) => {
       if (!sfxEnabled.value) return
       
-      // In a real implementation, you would play actual audio files
-      // For now, we'll just log the sound
-      console.log(`Playing SFX: ${type} at volume ${sfxVolume.value}`)
+      // Create audio context for sound effects
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+        const oscillator = audioContext.createOscillator()
+        const gainNode = audioContext.createGain()
+        
+        oscillator.connect(gainNode)
+        gainNode.connect(audioContext.destination)
+        
+        // Different sound types
+        switch(type) {
+          case 'attack':
+            oscillator.frequency.value = 200
+            gainNode.gain.value = sfxVolume.value / 1000
+            oscillator.start()
+            oscillator.stop(audioContext.currentTime + 0.1)
+            break
+          case 'hit':
+            oscillator.frequency.value = 100
+            gainNode.gain.value = sfxVolume.value / 800
+            oscillator.start()
+            oscillator.stop(audioContext.currentTime + 0.2)
+            break
+          case 'pickup':
+            oscillator.frequency.value = 800
+            gainNode.gain.value = sfxVolume.value / 1000
+            oscillator.start()
+            oscillator.stop(audioContext.currentTime + 0.1)
+            break
+          case 'levelup':
+            oscillator.frequency.value = 400
+            gainNode.gain.value = sfxVolume.value / 1000
+            oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.2)
+            oscillator.start()
+            oscillator.stop(audioContext.currentTime + 0.3)
+            break
+          default:
+            oscillator.frequency.value = 440
+            gainNode.gain.value = sfxVolume.value / 1000
+            oscillator.start()
+            oscillator.stop(audioContext.currentTime + 0.1)
+        }
+      } catch (error) {
+        console.log(`Playing SFX: ${type} at volume ${sfxVolume.value}`)
+      }
     }
     
     const toggleMusic = () => {
       musicEnabled.value = !musicEnabled.value
+      if (musicEnabled.value) {
+        // Start background music (simple loop)
+        try {
+          const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+          const oscillator = audioContext.createOscillator()
+          const gainNode = audioContext.createGain()
+          
+          oscillator.connect(gainNode)
+          gainNode.connect(audioContext.destination)
+          
+          oscillator.type = 'sine'
+          oscillator.frequency.value = 220
+          gainNode.gain.value = musicVolume.value / 10000
+          
+          oscillator.start()
+          // Store reference for stopping later
+          window.gameMusicOscillator = oscillator
+          window.gameMusicGainNode = gainNode
+          window.gameMusicContext = audioContext
+        } catch (error) {
+          console.log('Music started (simulated)')
+        }
+      } else {
+        // Stop music
+        try {
+          if (window.gameMusicOscillator) {
+            window.gameMusicOscillator.stop()
+            window.gameMusicOscillator = null
+            window.gameMusicGainNode = null
+            window.gameMusicContext = null
+          }
+        } catch (error) {
+          console.log('Music stopped (simulated)')
+        }
+      }
       addNotification(`Music ${musicEnabled.value ? 'enabled' : 'disabled'}`, 'info')
     }
     
@@ -3102,19 +3505,26 @@ body {
 /* ==========================================
    DESKTOP CONTROLS
    ========================================== */
-.desktop-controls {
+.movement-keys {
   position: absolute;
   bottom: 20px;
   left: 20px;
   z-index: 100;
-}
-
-.movement-keys {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  margin-bottom: 20px;
+}
+
+.action-buttons {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  max-width: 400px;
 }
 
 .horizontal-keys {
@@ -3146,13 +3556,6 @@ body {
 
 .key-btn.w {
   margin-bottom: 5px;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  max-width: 400px;
 }
 
 .action-btn {
@@ -3210,9 +3613,13 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: clamp(10px, 2vh, 20px) clamp(10px, 3vw, 20px) clamp(20px, 4vh, 40px) clamp(10px, 3vw, 20px);
+  height: clamp(150px, 25vh, 200px);
   z-index: 100;
   pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: clamp(10px, 2vh, 20px);
 }
 
 .mobile-controls > * {
@@ -3220,60 +3627,68 @@ body {
 }
 
 .joystick-container {
-  position: absolute;
-  bottom: clamp(80px, 12vh, 120px);
-  left: clamp(30px, 5vw, 50px);
+  position: relative;
+  width: clamp(100px, 20vw, 150px);
+  height: clamp(100px, 20vw, 150px);
 }
 
 .joystick-base {
-  width: clamp(80px, 15vw, 120px);
-  height: clamp(80px, 15vw, 120px);
-  background: rgba(0, 0, 0, 0.5);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 3px solid rgba(255, 255, 255, 0.4);
   border-radius: 50%;
   position: relative;
   touch-action: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .joystick-thumb {
-  width: clamp(40px, 7.5vw, 60px);
-  height: clamp(40px, 7.5vw, 60px);
-  background: rgba(255, 255, 255, 0.8);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  width: clamp(40px, 8vw, 60px);
+  height: clamp(40px, 8vw, 60px);
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   position: absolute;
-  top: calc(50% - clamp(20px, 3.75vw, 30px));
-  left: calc(50% - clamp(20px, 3.75vw, 30px));
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   transition: transform 0.1s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .mobile-actions {
-  position: absolute;
-  bottom: clamp(40px, 8vh, 60px);
-  right: clamp(30px, 5vw, 50px);
+  position: relative;
   display: flex;
-  gap: clamp(10px, 2vw, 20px);
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: clamp(8px, 1.5vh, 15px);
+  width: clamp(180px, 35vw, 250px);
+}
+
+.mobile-action-row {
+  display: flex;
   justify-content: flex-end;
-  max-width: clamp(200px, 40vw, 300px);
+  gap: clamp(8px, 1.5vw, 15px);
 }
 
 .mobile-btn {
-  width: clamp(60px, 12vw, 90px);
-  height: clamp(60px, 12vw, 90px);
+  width: clamp(50px, 10vw, 70px);
+  height: clamp(50px, 10vw, 70px);
   border-radius: 50%;
   border: none;
-  font-size: clamp(24px, 5vw, 40px);
+  font-size: clamp(20px, 4vw, 32px);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.1s ease;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  touch-action: manipulation;
 }
 
 .mobile-btn:active {
-  transform: scale(0.9);
+  transform: scale(0.85);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .mobile-btn.attack {
@@ -3297,42 +3712,479 @@ body {
 }
 
 .mobile-btn.menu {
-  background: rgba(0, 0, 0, 0.7);
+  background: linear-gradient(135deg, #FF9800, #F57C00);
   color: white;
-  font-size: clamp(20px, 4vw, 36px);
 }
 
 /* ==========================================
-   ORIENTATION SPECIFIC STYLES
+   MOBILE HUD (COMPLETELY SEPARATED)
+   ========================================== */
+.mobile-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.mobile-hud > * {
+  pointer-events: auto;
+}
+
+.mobile-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%);
+  border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+
+.mobile-stats-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.mobile-health-bar,
+.mobile-stamina-bar {
+  position: relative;
+  height: 20px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.mobile-health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4444, #cc0000);
+  transition: width 0.3s ease;
+}
+
+.mobile-stamina-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4444ff, #0000cc);
+  transition: width 0.3s ease;
+}
+
+.mobile-health-text,
+.mobile-stamina-text {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  white-space: nowrap;
+}
+
+.mobile-level-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.mobile-level {
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.mobile-xp-bar {
+  width: 60px;
+  height: 6px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+.mobile-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffaa00, #ff6600);
+  transition: width 0.3s ease;
+}
+
+.mobile-quick-inventory {
+  display: flex;
+  gap: 8px;
+}
+
+.mobile-quick-slot {
+  width: 40px;
+  height: 40px;
+  background: rgba(0,0,0,0.6);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-quick-slot.active {
+  border-color: #4CAF50;
+  background: rgba(76,175,80,0.3);
+  box-shadow: 0 0 10px rgba(76,175,80,0.5);
+}
+
+.mobile-quick-slot.empty {
+  opacity: 0.7;
+}
+
+.mobile-slot-icon {
+  font-size: 18px;
+}
+
+.mobile-slot-number {
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.mobile-status-effects {
+  position: absolute;
+  top: 80px;
+  left: 10px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 20px);
+}
+
+.mobile-status-effect {
+  width: 30px;
+  height: 30px;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse 2s infinite;
+}
+
+.mobile-effect-icon {
+  font-size: 16px;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ==========================================
+   MOBILE CONTROLS (REVISED)
+   ========================================== */
+.mobile-controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 180px;
+  z-index: 150;
+  pointer-events: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 15px;
+  background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
+}
+
+.mobile-controls > * {
+  pointer-events: auto;
+}
+
+.joystick-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.joystick-base {
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  border: 3px solid rgba(255,255,255,0.4);
+  border-radius: 50%;
+  position: relative;
+  touch-action: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.joystick-thumb {
+  width: 50px;
+  height: 50px;
+  background: rgba(255,255,255,0.9);
+  border: 2px solid rgba(255,255,255,0.6);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.mobile-actions {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+  gap: 10px;
+  width: 160px;
+  height: 150px;
+}
+
+.mobile-action-row {
+  display: contents;
+}
+
+.mobile-btn {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: none;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  touch-action: manipulation;
+}
+
+.mobile-btn:active {
+  transform: scale(0.85);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.mobile-btn.attack {
+  background: linear-gradient(135deg, #F44336, #D32F2F);
+  color: white;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.mobile-btn.block {
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+  color: white;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.mobile-btn.dash {
+  background: linear-gradient(135deg, #00BCD4, #0097A7);
+  color: white;
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.mobile-btn.use {
+  background: linear-gradient(135deg, #4CAF50, #388E3C);
+  color: white;
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.mobile-btn.menu {
+  background: linear-gradient(135deg, #FF9800, #F57C00);
+  color: white;
+  grid-column: 1 / 3;
+  grid-row: 3;
+  border-radius: 25px;
+}
+
+/* ==========================================
+   MOBILE MINIMAP
+   ========================================== */
+.mobile-minimap {
+  position: absolute;
+  top: 120px;
+  right: 10px;
+  width: 120px;
+  height: 120px;
+  background: rgba(0,0,0,0.8);
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 10px;
+  padding: 5px;
+  z-index: 180;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+.mobile-minimap-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.mobile-minimap-grid {
+  display: grid;
+  grid-template-columns: repeat(20, 1fr);
+  grid-template-rows: repeat(20, 1fr);
+  gap: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-minimap-row {
+  display: contents;
+}
+
+.mobile-minimap-tile {
+  width: 100%;
+  height: 100%;
+  transition: all 0.2s ease;
+}
+
+.mobile-minimap-tile.wall {
+  background: #444;
+}
+
+.mobile-minimap-tile.floor {
+  background: #222;
+}
+
+.mobile-minimap-tile.player {
+  background: #4CAF50;
+  box-shadow: 0 0 4px #4CAF50;
+  animation: playerPulse 1s infinite;
+}
+
+.mobile-minimap-tile.enemy {
+  background: #F44336;
+  box-shadow: 0 0 3px #F44336;
+}
+
+.mobile-minimap-tile.item {
+  background: #FF9800;
+  box-shadow: 0 0 3px #FF9800;
+}
+
+.mobile-minimap-tile.exit {
+  background: #00BCD4;
+  box-shadow: 0 0 3px #00BCD4;
+}
+
+.mobile-minimap-tile.fog {
+  background: #111;
+  opacity: 0.5;
+}
+
+@keyframes playerPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ==========================================
+   ORIENTATION SPECIFIC STYLES (NEW)
    ========================================== */
 @media (orientation: landscape) {
   .mobile-controls {
-    padding-bottom: clamp(30px, 6vh, 50px);
+    height: 140px;
+    padding: 10px;
   }
   
   .joystick-container {
-    bottom: clamp(60px, 10vh, 100px);
+    width: 100px;
+    height: 100px;
   }
   
   .mobile-actions {
-    bottom: clamp(30px, 6vh, 50px);
-    right: clamp(40px, 8vw, 80px);
+    width: 140px;
+    height: 120px;
+    gap: 8px;
   }
   
   .mobile-btn {
-    width: clamp(70px, 14vw, 100px);
-    height: clamp(70px, 14vw, 100px);
-    font-size: clamp(28px, 6vw, 44px);
+    font-size: 20px;
   }
   
-  .joystick-base {
-    width: clamp(90px, 18vw, 130px);
-    height: clamp(90px, 18vw, 130px);
+  .mobile-top-bar {
+    padding: 8px;
   }
   
-  .joystick-thumb {
-    width: clamp(45px, 9vw, 65px);
-    height: clamp(45px, 9vw, 65px);
+  .mobile-health-bar,
+  .mobile-stamina-bar {
+    height: 16px;
+  }
+  
+  .mobile-health-text,
+  .mobile-stamina-text {
+    font-size: 10px;
+  }
+  
+  .mobile-level {
+    font-size: 12px;
+  }
+  
+  .mobile-quick-slot {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .mobile-slot-icon {
+    font-size: 16px;
+  }
+}
+
+@media (orientation: portrait) {
+  .mobile-controls {
+    height: 200px;
+    padding: 20px;
+  }
+  
+  .joystick-container {
+    width: 140px;
+    height: 140px;
+  }
+  
+  .mobile-actions {
+    width: 180px;
+    height: 160px;
+    gap: 12px;
+  }
+  
+  .mobile-btn {
+    font-size: 28px;
+  }
+  
+  .mobile-top-bar {
+    padding: 12px;
+  }
+  
+  .mobile-health-bar,
+  .mobile-stamina-bar {
+    height: 24px;
+  }
+  
+  .mobile-health-text,
+  .mobile-stamina-text {
+    font-size: 12px;
+  }
+  
+  .mobile-level {
+    font-size: 16px;
+  }
+  
+  .mobile-quick-slot {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .mobile-slot-icon {
+    font-size: 20px;
   }
 }
 
